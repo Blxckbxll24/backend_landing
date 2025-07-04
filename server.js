@@ -34,7 +34,7 @@ app.get('/', (req, res) => {
 // Obtener mensajes
 app.get('/api/mensajes', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM mensajes');
+    const [rows] = await pool.query('SELECT id, name, email, phone, message, status FROM mensajes ORDER BY created_at DESC');
     res.json(rows);
   } catch (error) {
     console.error('Error al obtener mensajes:', error);
@@ -133,6 +133,30 @@ app.post('/api/insert-user', async (req, res) => {
   } catch (error) {
     console.error('❌ Error al insertar usuario:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// Actualizar estado de mensaje
+app.put('/api/mensajes/:id/status', async (req, res) => {
+  const id = req.params.id;
+  const { status } = req.body;
+
+  const estadosValidos = ['nuevo', 'contactado', 'descartado'];
+  if (!estadosValidos.includes(status)) {
+    return res.status(400).json({ error: 'Estado inválido' });
+  }
+
+  try {
+    const [result] = await pool.query('UPDATE mensajes SET status = ? WHERE id = ?', [status, id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Mensaje no encontrado' });
+    }
+
+    res.json({ message: 'Estado actualizado correctamente' });
+  } catch (error) {
+    console.error('Error al actualizar estado:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
